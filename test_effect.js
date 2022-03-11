@@ -4,7 +4,7 @@ var config = {
   height: 600,
   backgroundColor: '#080808',
   parent: 'phaser-example',
-  scene: {
+  scene: {//////ddawd
     preload: preload,
     create: create
   }
