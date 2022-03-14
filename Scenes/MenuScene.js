@@ -37,7 +37,8 @@ export class MenuScene extends Phaser.Scene{
 		// })
 		
 		playButton.on("pointerup", ()=>{
-			this.scene.start(CST.SCENES.PLAY, "now Play");
+			this.scene.start(CST.SCENES.PLAY, "now TEST");
+			this.scene.start(CST.SCENES.UI, "now TEST");
 		})
 	}
 }

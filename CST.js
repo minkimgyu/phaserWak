@@ -2,7 +2,9 @@ export const CST = {
 	 SCENES: {
         LOAD: "LOAD",
         MENU: "MENU",
-        PLAY: "PLAY"
+        PLAY: "PLAY",
+		TEST: "TEST",
+		 UI: "UI"
     },
     IMAGE: {
         LOGO: "logo.png",
@@ -15,7 +17,3 @@ export const CST = {
     SPRITE: {
     }
 }
-//awdawdawdawddawdawdawdawdafhfthwda
-//sdefseawdawdsefsefsefs
-//sefseffsefsef
-//awdawdawdawdawdfdgfgrg
