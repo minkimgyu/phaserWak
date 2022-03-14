@@ -1,12 +1,7 @@
-import {CST} from "../CST.js";      
+import {CST} from "../CST.js";    
 
-var timeline;
-var cam;
-
-
-var tween;
-var target = new Phaser.Math.Vector2();
-
+var name;
+var text;
 
 export class TestScene extends Phaser.Scene{
 	constructor(){
@@ -16,53 +11,25 @@ export class TestScene extends Phaser.Scene{
 	}
 		
 	init(data){
-		console.log(data);
 	}
 	preload(){
-		this.load.image('Wak', './Images/111.png');
+		this.load.image('textBox', './Images/text8.png');
+		this.load.image('Wak', './Images/wak1.png');
 	}
 	create(){
+		this.cameras.main.backgroundColor.setTo(0, 200, 200);
+		this.add.image(400, 500, 'textBox');
+		this.add.image(700, 300, 'Wak');
 		
-		var g1 = this.add.grid(0, 0, 2400, 2400, 24, 24, 0x00b9f2).
-	setAltFillStyle(0x016fce).setOutlineStyle();
+		//this.add.image(100, 300, 'Wak').flipX = true;
 		
-	var image = this.add.image(100, 100, 'Wak');
 		
-	this.cameras.main.setBounds(0, 0, 10000, 10000);
-	cam = this.cameras.main;
-	cam.startFollow(image, true);
-	
+		name = this.add.text(0 + 50, 300 + 130, "「우왁굳」")
+	.setFont('20px Arial').setColor('#000028').setAlign('left');
 		
-		 tween = this.tweens.add({
-        targets: image,
-        x: 400,
-        y: 300,
-        ease: 'Linear',
-        duration: 1000,
-        paused: true
-    });
-		
-	//console.log(this.scene.input.activePointer);
-		
-	 this.input.on('pointerdown', function (pointer) {
-
-	console.log(this.scene.input.activePointer);
-		 
-    this.scene.input.activePointer.updateWorldPoint(this.scene.cameras.main);
-    const realPointer = this.scene.input.activePointer
-		 
-        target.x = realPointer.worldX
-        target.y = realPointer.worldY
-
-        tween.play();
-    });
-		
+		text = this.add.text(0 + 50, 300 + 180, "형ㅜㅠㅠㅠㅠ")
+	.setFont('15px Arial').setColor('#000028').setAlign('left');
 	}
 	update(){
-		 if (tween.isPlaying())
-    	{
-       		 tween.updateTo('x', target.x, true);
-        	tween.updateTo('y', target.y, true);
-    	}
-}
+	}
 }
