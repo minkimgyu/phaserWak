@@ -4,7 +4,8 @@ export const CST = {
         MENU: "MENU",
         PLAY: "PLAY",
 		TEST: "TEST",
-		 UI: "UI"
+		UI: "UI",
+		BUILD: "BUILD"
     },
     IMAGE: {
         LOGO: "logo.png",
@@ -15,5 +16,11 @@ export const CST = {
     AUDIO: {
     },
     SPRITE: {
-    }//%&&&&&&&&&&&&&&
+    },
+	TYPE:{
+		DOT: "DOT",
+		NOTE: "NOTE",
+		LONGNOTE: "LONGNOTE",
+		LONGNOTEMINI: "LONGNOTEMINI"
+	}
 }

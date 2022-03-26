@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <style>
+     #container{
+       width: 300px;
+       height: 300px;
+       background-color: rgba(200, 200, 200, 0.7);
+       border: 3px solid rgba(150, 150, 150, 0.7);
+       position: relative;
+     }    
+     #x {
+       width: 100px;
+       height: 30px;
+       margin-right: 20px
+     }
+     #y {
+       width: 100px;
+       height: 30px;
+     }
+     #time, #index {
+       width: 200px;
+       height: 30px;
+     }
+     #text{
+       font: 30px Arial;
+       color: white;
+       display: inline;
+     }
+     #close{
+       width: 30px;
+       height: 30px;
+       background-color: white;
+       position: absolute;
+       top: 0;
+       right: 0;
+	   border: 2px solid white;
+     }
+     hr{
+       height: 3px;
+       background: black;
+     }
+     #add{
+      width: 80px;
+      height: 30px;
+      background-color: white;
+      display: inline;
+      float: right;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      margin: 5px;
+	  border: 2px solid white;
+     }
+	 #text1, #text2, #text3, #text4{
+	   font: 20px Arial;
+       color: white;
+       display: inline;
+	 }
+   </style>
+</head>
+<body>
+ <div id = "container">
+   <div id = "text">Note</div>
+   <button id = "close">X</button>
+   <hr><br>
+   <div id = "text1">X: </div>
+   <input id = "x"> 
+   <div id = "text2">Y: </div>
+   <input id = "y">
+   <br><br>
+   <div id = "text3">Index: </div> 
+   <input id ="index">
+   <br><br>
+   <div id = "text4">Time: </div> 
+   <input id="time">
+   <button id = "add">적용</button>
+ </div>
+</body>
+
+</html>

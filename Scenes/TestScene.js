@@ -134,7 +134,7 @@ export class TestScene extends Phaser.Scene{
 		// 	console.log(3);
 		// })
 		
-		this.add.image(0, 0, "back").setOrigin(0).setDepth(0).setScale(0.58);;
+		this.add.image(0, 0, "back").setOrigin(0).setDepth(0).setScale(0.58);
 		this.cameras.main.backgroundColor.setTo(0, 200, 200);
 		nextTalk();
 		this.input.on('pointerdown', function (pointer) {
