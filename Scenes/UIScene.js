@@ -15,6 +15,9 @@ var button;
 var panel;
 var slider;
 
+var modeText;
+var selectedLineText;
+
 class Button {
    constructor (pos, width, height, fontSize) { 
 		this.But = loadGame.add.dom(pos.x, pos.y).
@@ -62,18 +65,33 @@ class Panel{
 		this.panel.setVisible(bool);
 	}
 	
-	SetData(value, type, index){
+	SetData(value, type){
 		
 		this.SetDisable(type)
-		
 		this.type = type;
-		this.index = index;
 		
-		this.SetMainName(type + " " +index);
-		this.x_text.value = value.pos.x;
-		this.y_text.value = value.pos.y;
-		this.index_text.value = index;
-		this.time_text.value = value.duration;
+		if(type === CST.TYPE.DOT){
+			var indexOfLine = value.image.name.INDEXOFLINE;
+			var indexOfDot = value.image.name.INDEXOFDOT;
+			
+			this.index = value.image.name.INDEXOFDOT;
+			
+			this.SetMainName("Line " + indexOfLine + " " + type + " " + indexOfDot);
+			this.x_text.value = value.pos.x;
+			this.y_text.value = value.pos.y;
+			this.index_text.value = indexOfDot;
+			this.time_text.value = value.duration;
+		}else{
+			var index = value.image.name.INDEX;
+			
+			this.index = index;
+			
+			this.SetMainName(type + " " +index);
+			this.x_text.value = value.pos.x;
+			this.y_text.value = value.pos.y;
+			this.index_text.value = index;
+			this.time_text.value = value.duration;
+		}
 	}
 	
 	SetDisable(type){
@@ -105,7 +123,7 @@ class SliderBar{
 	constructor (pos) { 
 		this.Slider = loadGame.add.dom(pos.x, pos.y).createFromCache("form1").setOrigin(0);
 		this.Slider.addListener('click');
-		this.Slider.setVisible(false);
+		//this.Slider.setVisible(false);
 	}
 }
 
@@ -128,12 +146,7 @@ export class UIScene extends Phaser.Scene{
 	}
 	create(){
 		
-		slider = new SliderBar({x:760, y:0});
-		slider.Slider.on('click', function (event) {
-			if(event.target.tagName === "BUTTON"){
-				console.log(event.target.id)
-			}
-		});
+		
 		
 		panel = new Panel({x:10, y:222});
 		panel.panel.on('click', function (event) {
@@ -153,6 +166,35 @@ export class UIScene extends Phaser.Scene{
 		
 		text = this.add.text(480, 50, "")
 		.setFont('30px Arial').setColor('#00FFFF').setAlign('center');
+		
+		slider = new SliderBar({x:760, y:0});
+		slider.Slider.on('click', function (event) {
+			if(event.target.tagName === "BUTTON"){
+				//console.log(event.target.id)
+				PlayScene.setMode(event.target.id);
+				loadGame.SetModeText(event.target.id);
+			}
+		});
+		
+		modeText = loadGame.add.text(10, 80, "")
+		.setFont('30px Arial').setColor('#00FFFF').setAlign('center');
+		loadGame.SetModeText(CST.MODE.IDLE);
+		
+		selectedLineText = loadGame.add.text(10, 120, "")
+		.setFont('20px Arial').setColor('#00FFFF').setAlign('center');
+		loadGame.SetModeText(CST.MODE.IDLE);
+	}
+	
+	SetselectedLineText(index){
+		selectedLineText.setText("Line" + index);
+	}
+	
+	SetClearLineText(){
+		selectedLineText.setText("");
+	}
+	
+	SetModeText(mode){
+		modeText.setText(mode);
 	}
 	
 	SetPanel(value, type, index){
@@ -163,8 +205,4 @@ export class UIScene extends Phaser.Scene{
 	SetTimes(value){
 		text.setText("Times: " + value);
 	}
-}
-
-function actionOnClick(){
-	console.log("awdawdawd")
 }
