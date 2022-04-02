@@ -19,7 +19,7 @@ var modeText;
 var selectedLineText;
 
 class Button {
-   constructor (pos, width, height, fontSize) { 
+   constructor (pos, width, height, fontSize, text) { 
 		this.But = loadGame.add.dom(pos.x, pos.y).
 		createElement("button").setOrigin(0);
 		
@@ -30,7 +30,7 @@ class Button {
 	   	style.font = "20px Arial";
 		style.backgroundColor = "rgba(106, 161, 210, 0.58)"	  
 	   
-	   	this.But.node.innerText = '메뉴창';
+	   	this.But.node.innerText = text;
 	}
 }
 
@@ -86,6 +86,8 @@ class Panel{
 			
 			this.index = index;
 			
+			console.log(type)
+			
 			this.SetMainName(type + " " +index);
 			this.x_text.value = value.pos.x;
 			this.y_text.value = value.pos.y;
@@ -105,6 +107,11 @@ class Panel{
 			this.y_text.disabled = true;
 			this.index_text.disabled = true; 
 			this.time_text.disabled = true; 
+		}else{
+			this.x_text.disabled = true;
+			this.y_text.disabled = true;
+			this.index_text.disabled = true; 
+			this.time_text.disabled = false; 
 		}
 	}
 	
@@ -158,10 +165,24 @@ export class UIScene extends Phaser.Scene{
 			}
 		});
 		
-		var but1 = new Button({x: 10, y: 10}, 100, 40, 10)
+		var but1 = new Button({x: 10, y: 10}, 100, 40, 10, "매뉴창")
 		but1.But.node.onclick= function(){
 			var now = slider.Slider.visible;
 			slider.Slider.setVisible(!now);
+	    } 
+		
+		var but2 = new Button({x: this.game.renderer.width / 2 - 55, y: 10},
+							  50, 40, 10, "▶")
+		but2.But.node.onclick= function(){
+		 // 게임 시작 코드 추가
+			PlayScene.startGame();
+	    } 
+		
+		var but3 = new Button({x: this.game.renderer.width / 2 + 5, y: 10},
+							  50, 40, 10, "■")
+		but3.But.node.onclick= function(){
+		 // 게임 시작 코드 추가
+			PlayScene.endGame();
 	    } 
 		
 		text = this.add.text(480, 50, "")
@@ -204,5 +225,9 @@ export class UIScene extends Phaser.Scene{
 	
 	SetTimes(value){
 		text.setText("Times: " + value);
+	}
+	
+	ResetTimes(){
+		text.setText("");
 	}
 }

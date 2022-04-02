@@ -1,7 +1,8 @@
 import {CST} from "../CST.js";                  
 
 export class Note {
-	constructor (pos, duration, image, judgeText, indexOfDot, type, keyCode) { 
+	constructor (loadGame, pos, duration, image, judgeText, indexOfDot, type, keyCode) { 
+		this.loadGame = loadGame;
 		this.pos = pos;
 		this.duration = duration;
 		this.image = image;
@@ -14,6 +15,11 @@ export class Note {
 		
 		this.pressed = false;
 		this.keyCode = keyCode;
+		this.longNoteIndex = -1;
+	}
+	
+	setLongNoteIndex(index){
+		this.longNoteIndex = index;
 	}
 	
 	inputCheck(){
@@ -35,51 +41,158 @@ export class Note {
 	}
 	
 	judge(nowTime){
-		checkType(nowTime);
+		if(this.type === CST.TYPE.NOTE){
+			this.noteJudge(nowTime);
+		}else if(this.type === CST.TYPE.LONGNOTEHEAD){
+			this.noteJudge(nowTime);
+		}else if(this.type === CST.TYPE.LONGNOTEMINI){
+			this.longNoteJudge(nowTime);
+		}else if(this.type === CST.TYPE.LONGNOTETAIL){
+			this.longNoteJudge(nowTime);
+		}
+		
+		
 	}
 	
-	checkType(nowTime){
-		if(this.type === CST.TYPE.NOTE){
-			if(inputCheck()){
-				if(this.judgeOnce)
-					return;
+	noteJudge(nowTime){
+		if(this.keyCode.isDown){
+			if(this.judgeOnce)
+				return;
 
-				var minTime = this.duration - this.addTime;
-				var maxTime = this.duration + this.addTime;
+		var minTime = parseFloat(this.duration) -  parseFloat(this.addTime);
+		var maxTime =  parseFloat(this.duration) +  parseFloat(this.addTime);
 
-				if(nowTime >= minTime && nowTime <= maxTime){
-					var cur = Math.abs(nowTime - this.duration);
+			if(nowTime >= minTime && nowTime <= maxTime){
+				var cur = Math.abs(nowTime - this.duration);
 
-					var rank = null;
+				var rank = "";
 
-					if(cur < 0.1){
-						rank = "perfect";
-					}else if(cur < 0.2){
-						rank = "good";
-					}else if(cur < 0.3){
-						rank = "bad";
-					}else if(cur < 0.4){
-						rank = "miss";
-					}
-
-					this.judgeText.setText(rank);
-					this.judgeOnce = true;
-				}else{
-					return;
+				if(cur < 0.1){
+					rank = "perfect";
+				}else if(cur < 0.2){
+					rank = "good";
+				}else if(cur < 0.3){
+					rank = "bad";
+				}else if(cur < 0.4){
+					rank = "miss";
 				}
+
+				this.judgeText.setText(rank);
+				this.judgeOnce = true;
+			}else{
+				return;
 			}
-		}else if(this.type === CST.TYPE.LONGNOTE){
-		}else if(this.type === CST.TYPE.LONGNOTEMINI){
+		}
+	}
+	
+	longNoteJudge(nowTime){
+		
+		if(this.judgeOnce)
+			return;
+		
+		var rank;
+		
+		if(nowTime < parseFloat(this.duration)){
+			if(this.keyCode.isUp){
+				this.loadGame.noteContainer.SetMissForAllLongNotes(this.longNoteIndex);
+			}
+		}else{
+			rank = "perfect";
+			this.judgeText.setText(rank);
+			this.judgeOnce = true;
 		}
 	}
 }
 export class NoteContainer{
-	constructor (loadGame, lineContainer) { 
+	constructor (loadGame) { 
 		this.loadGame = loadGame;
 		this.notes = [];
-		this.lineContainer = lineContainer;
 		this.longNoteCount = 0;
-		this.indexOfLongNote = [];
+	}
+	
+	judgeNote(){
+		var nowTime = this.loadGame.lineContainer.timer.getElapsedSeconds().toFixed(3)
+		var addTime = 0.5;
+		
+		var sortArr = this.sortNotes();
+		
+		var nowCanJudgeMinTime = parseFloat(nowTime) - parseFloat(addTime);
+		var nowCanJudgeMaxTime = parseFloat(nowTime) + parseFloat(addTime);
+		var nowCanJudgeNotes = [];
+		
+		for(var i = 0; i < sortArr.length; i++){
+			
+			if(sortArr[i].duration > nowCanJudgeMaxTime)
+				break;
+			
+			if(sortArr[i].duration < nowCanJudgeMinTime){
+				if(sortArr[i].judgeOnce === false){
+					
+					if(sortArr[i].type === CST.TYPE.LONGNOTEHEAD){
+						this.loadGame.noteContainer.SetMissForAllLongNotes(sortArr[i].longNoteIndex);
+					}else{
+						var rank = "miss";
+						sortArr[i].judgeText.setText(rank);
+						sortArr[i].judgeOnce = true;
+					}
+				}
+			}
+			
+			if(nowCanJudgeMinTime <= sortArr[i].duration && sortArr[i].duration <= nowCanJudgeMaxTime){
+				nowCanJudgeNotes.push(sortArr[i]);
+			}
+		}
+		
+		for(var i = 0; i < nowCanJudgeNotes.length; i++){
+			nowCanJudgeNotes[i].judge(nowTime);
+		}
+	}
+	
+	clearJudge(){
+		for(var i = 0; i < this.notes.length; i++){
+			this.notes[i].judgeText.setText("");
+			this.notes[i].judgeOnce = false;
+ 		}
+	}
+	
+	sortNotes(){
+		var arr = [];
+		for(var i = 0; i < this.notes.length; i++){
+			arr.push(this.notes[i]);
+		}
+		
+		arr.sort(function(a, b) {
+		  return a.duration - b.duration
+		});
+		
+		return arr;
+	}
+	
+	findIndexOfNote(index){
+		var arr = [];
+		
+		 for(var i = 0; i < this.notes.length; i++){
+			 if(this.notes[i].longNoteIndex === index){
+				 
+				var noteInfo = {index: i, note: this.notes[i]};
+				arr.push(noteInfo);
+			 }
+		 }
+		
+		return arr;
+	}
+	
+	SetMissForAllLongNotes(index){
+		var arr = this.findIndexOfNote(index);
+		
+		for(var i = 0; i < arr.length; i++){
+			
+			if(arr[i].note.judgeOnce === false){
+				var rank = "miss";
+			 	arr[i].note.judgeText.setText(rank);
+			 	arr[i].note.judgeOnce = true;
+			}
+		}
 	}
 	
 	addNote(target){
@@ -88,13 +201,13 @@ export class NoteContainer{
 
 		console.log("nowreturn")
 		
-		if(this.lineContainer.canReturnSelectLine() === false){
+		if(this.loadGame.lineContainer.canReturnSelectLine() === false){
 			console.log("nowreturn")
 			return;
 		}
 			
 		console.log("nowreturn1")
-		var nowLine = this.lineContainer.returnSelectLine();
+		var nowLine = this.loadGame.lineContainer.returnSelectLine();
 		
 		var index = -1;
 
@@ -122,8 +235,8 @@ export class NoteContainer{
 			var judgeText = this.loadGame.add.text(xRound + 70, yRound + 50, "")
 			.setFont('20px Arial').setColor('#00FFFF').setAlign('center');
 			//hex code 색상임
-			var newNote = new Note({x: xRound, y: yRound}, 
-			noteDur, image, judgeText, index, CST.TYPE.NOTE)
+			var newNote = new Note(this.loadGame, {x: xRound, y: yRound}, 
+			noteDur, image, judgeText, index, CST.TYPE.NOTE, this.loadGame.keys.Space)
 			this.notes.push(newNote);
 			newNote.image.setInteractive();
 		}
@@ -135,10 +248,10 @@ export class NoteContainer{
 
 		var index = -1;
 		
-		if(this.lineContainer.canReturnSelectLine() === false)
+		if(this.loadGame.lineContainer.canReturnSelectLine() === false)
 			return;
 		
-		var nowLine = this.lineContainer.returnSelectLine();
+		var nowLine = this.loadGame.lineContainer.returnSelectLine();
 
 		for(var i = 0; i < nowLine.dots.length; i++){
 			if(nowLine.dots[i].pos.x === xRound && nowLine.dots[i].pos.y === yRound){
@@ -159,35 +272,52 @@ export class NoteContainer{
 			}
 
 			var image = this.loadGame.add.image(xRound, yRound, 'note1').setDepth(0);
-			image.name = SetTypeOfImage(CST.TYPE.LONGNOTE, this.notes.length);
+			
 
+			if(nowLine.returnLongNoteData() === 0){
+				image.name = SetTypeOfImage(CST.TYPE.LONGNOTEHEAD, this.notes.length);
+			}else if(nowLine.returnLongNoteData() === 1){
+				image.name = SetTypeOfImage(CST.TYPE.LONGNOTETAIL, this.notes.length);
+			}
+			
+			
 			var judgeText = this.loadGame.add.text(xRound + 70, yRound + 50, "")
 			.setFont('20px Arial').setColor('#00FFFF').setAlign('center');
-			var newNote = new Note({x: xRound, y: yRound}, 
-			noteDur, image, judgeText, index, CST.TYPE.LONGNOTE)
+			var newNote = new Note(this.loadGame, {x: xRound, y: yRound}, 
+			noteDur, image, judgeText, index, CST.TYPE.NOTE, this.loadGame.keys.Space)
 			this.notes.push(newNote);
 			newNote.image.setInteractive();
 
-			this.longNoteCount += 1;
-			this.indexOfLongNote.push(index);
-
-			if(this.longNoteCount === 2){
-
-				if(this.lineContainer.canReturnSelectLine() === false){
-					return;
-				}
+			var nowCount = nowLine.addLongNote(newNote);
+			
+			if(nowCount){
 				
-				var line = this.lineContainer.returnSelectLine();
+				this.longNoteCount += 1;
 				
-				var pos = line.ReturnLongNotePos(this.indexOfLongNote[0], this.indexOfLongNote[1]);
+				var arr = nowLine.returnLongNote()
+				
+				arr[0].setLongNoteIndex(this.longNoteCount)
+				arr[0].type = CST.TYPE.LONGNOTEHEAD;
+				
+				arr[1].setLongNoteIndex(this.longNoteCount)
+				arr[1].type = CST.TYPE.LONGNOTETAIL;
+				var pos = nowLine.ReturnLongNotePos();
 
+				var startDur = parseFloat(arr[0].duration);
+				var endDur = parseFloat(arr[1].duration);
+				
+				var count = pos.length + 1;
+				var temp = endDur - startDur;
+				
+				var perPos = temp / count;
+				
+				console.log(perPos)
+				
 				for(var j = 0; j < pos.length; j++){
 
 					var noteDur = 0;
 					if(nowLine.dots.length != 0){
-						for(var i = 0; i <= index; i++){
-							noteDur += nowLine.dots[i].duration;
-						}
+						noteDur =  startDur + perPos * (j + 1);
 					}
 
 					var image = this.loadGame.add.image(pos[j].x, pos[j].y, 'note2').setDepth(0);
@@ -195,11 +325,16 @@ export class NoteContainer{
 
 					var judgeText = this.loadGame.add.text(pos[j].x + 70, pos[j].y + 50, "")
 					.setFont('20px Arial').setColor('#00FFFF').setAlign('center');
-					var newNote = new Note({x: pos[j].x, y: pos[j].y}, 
-					noteDur, image, judgeText, index, CST.TYPE.LONGNOTEMINI)
+					var newNote = new Note(this.loadGame, {x: pos[j].x, y: pos[j].y}, 
+					noteDur, image, judgeText, index, CST.TYPE.LONGNOTEMINI, this.loadGame.keys.Space)
 					this.notes.push(newNote);
 					newNote.image.setInteractive();
+					newNote.setLongNoteIndex(this.longNoteCount);
 				}
+				
+				
+				
+				console.log(this.notes)
 			}
 		}
 	}
@@ -224,17 +359,48 @@ export class NoteContainer{
 			return;
 		}else{
 			var note = this.notes[index];
+			
+			if(note.type === CST.TYPE.NOTE){
+				this.notes[index].image.destroy();
+				this.notes[index].judgeText.destroy();
+				this.notes.splice(index, 1);
 
-			this.notes[index].image.destroy();
-			this.notes[index].judgeText.destroy();
-			this.notes.splice(index, 1);
+				note = null;
 
-			note = null;
-
-			// 이미지 순서 초기화
-			for(var i = 0; i < this.notes.length; i++){
-				this.notes[i].image.name = SetTypeOfImage(CST.TYPE.NOTE, i);
+				// 이미지 순서 초기화
+				for(var i = 0; i < this.notes.length; i++){
+					this.notes[i].image.name = SetTypeOfImage(CST.TYPE.NOTE, i);
+				}
+			}else{
+				
+				var arr = this.findIndexOfNote(note.longNoteIndex);
+				
+				for(var i = this.notes.length - 1; i >= 0; i--){
+					
+					if(note.longNoteIndex === this.notes[i].longNoteIndex){
+						this.notes[i].image.destroy();
+						this.notes[i].judgeText.destroy();
+						this.notes.splice(i, 1);
+						
+						// console.log(i)
+						// console.log(this.notes)
+					}
+				}
+				
+				// 이미지 순서 초기화
+				for(var i = 0; i < this.notes.length; i++){
+					this.notes[i].image.name = SetTypeOfImage(CST.TYPE.NOTE, i);
+				}
+				
+				if(this.loadGame.lineContainer.canReturnSelectLine() === false)
+					return;
+		
+				var nowLine = this.loadGame.lineContainer.returnSelectLine();
+				nowLine.clearLongNote();
+			
 			}
+			
+			 console.log(this.notes)
 		}
 	}
 }

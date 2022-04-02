@@ -10,12 +10,10 @@ var target = new Phaser.Math.Vector2();
 var cam;
 var cursors;
 var loadGame;
-var UIScene;
 
 var g1;
 var timeline;
 //var lineArr = []
-var keys;
 var image;
 
 var timer;
@@ -36,9 +34,7 @@ var indexOfLongNote = [];
 
 
 // 라인, 노트 컨테이너
-var noteContainer;
-var lineContainer;
-var camera;
+
 var player;
 
 export class PlayScene extends Phaser.Scene{
@@ -48,6 +44,12 @@ export class PlayScene extends Phaser.Scene{
 		})
 		
 		this.mode = CST.MODE.IDLE;
+		this.keys = null;
+		this.camera = null;
+		this.UIScene = null;
+		
+		this.noteContainer = null;
+		this.lineContainer = null;
 	}
 	
 	setMode(mode){
@@ -62,10 +64,28 @@ export class PlayScene extends Phaser.Scene{
 		}
 	}
 	
+	startGame(){
+		this.lineContainer.startLine();
+		this.noteContainer.sortNotes();
+		nowPlay = true;
+		g1.setVisible(false);
+		player.setVisible(false);
+	}
+	
+	endGame(){
+		this.lineContainer.endline();
+		this.noteContainer.clearJudge();
+		nowPlay = false;
+		this.UIScene.ResetTimes();
+		this.camera.camFollow(player.image);
+		g1.setVisible(true);
+		player.setVisible(true);
+	}
+	
 	init(data){
 		console.log(data)
 		loadGame = this;
-		UIScene = loadGame.scene.get("UI");
+		this.UIScene = loadGame.scene.get("UI");
 		
 		
 	}
@@ -74,50 +94,51 @@ export class PlayScene extends Phaser.Scene{
 	}
 	create(){
 	
-		lineContainer = new LineContainer(loadGame, UIScene);
-		noteContainer = new NoteContainer(loadGame, lineContainer);
-		camera = new Camera(loadGame);
+		this.lineContainer = new LineContainer(loadGame);
+		this.noteContainer = new NoteContainer(loadGame);
+		this.camera = new Camera(loadGame);
 		player = new Player(loadGame);
 		
-		camera.camFollow(player.image);
+		this.camera.camFollow(player.image);
 		
-		lineContainer.initTimer();
+		this.lineContainer.initTimer();
 		
 		drawGrid();
 		cursors = this.input.keyboard.createCursorKeys();
-		keys = initKey();
+		this.keys = this.initKey();
 		
+		console.log(this.keys)
 		
 		this.input.on('pointerdown', function (pointer) {
 
 			target = returnRealPos(this.scene.input.activePointer);
 
-		 	if (pointer.leftButtonDown()){	
-				if(keys.A.isDown){
+		 	if (pointer.leftButtonDown()){
+				if(loadGame.keys.A.isDown){
 					if(loadGame.checkMode(CST.MODE.ADDDOT)){
-						if(lineContainer.canReturnSelectLine()){
-							lineContainer.selectedLine.addDot(target);
+						if(loadGame.lineContainer.canReturnSelectLine()){
+							loadGame.lineContainer.selectedLine.addDot(target);
 						}
 					}
 					else if(loadGame.checkMode(CST.MODE.DELETEDOT)){
-						if(lineContainer.canReturnSelectLine()){
-							lineContainer.selectedLine.deleteDot(target);
+						if(loadGame.lineContainer.canReturnSelectLine()){
+							loadGame.lineContainer.selectedLine.deleteDot(target);
 						}
 					}
 					else if(loadGame.checkMode(CST.MODE.ADDLINE)){
-						lineContainer.addLine(target);
+						loadGame.lineContainer.addLine(target);
 					}
 					else if(loadGame.checkMode(CST.MODE.DELETELINE)){
-						lineContainer.deleteLine();
+						loadGame.lineContainer.deleteLine();
 					}
 					else if(loadGame.checkMode(CST.MODE.ADDNOTE)){
-						noteContainer.addNote(target);
+						loadGame.noteContainer.addNote(target);
 					}
 					else if(loadGame.checkMode(CST.MODE.ADDLONGNOTE)){
-						noteContainer.addLongNote(target);
+						loadGame.noteContainer.addLongNote(target);
 					}
 					else if(loadGame.checkMode(CST.MODE.DELETENOTE)){
-						noteContainer.deleteNote(target);
+						loadGame.noteContainer.deleteNote(target);
 					}
 				}else{
 					player.movePlayer(target);
@@ -126,23 +147,38 @@ export class PlayScene extends Phaser.Scene{
     	});
 		
 		this.input.on('gameobjectdown',this.onObjectClicked);
+		//this.input.keyboard.on('keydown',this.keydown);
+		//this.input.keyboard.on('keyup',this.keyup);
 	}
-	 onObjectClicked(pointer,gameObject){
+	
+	// keydown(event){
+	// 	if(nowPlay){
+	// 		loadGame.noteContainer.judgeNote();
+	// 	}
+	// }
+	
+	// keyup(event){
+	// 	if(nowPlay){
+	// 		loadGame.noteContainer.judgeNote();
+	// 	}
+	// }
+	
+	onObjectClicked(pointer,gameObject){
 		 
 		 if (pointer.leftButtonDown()){	
-			if(keys.A.isDown){
+			if(loadGame.keys.A.isDown){
 		 
 				 if(gameObject === null){
 					 return;
 				 }
 
 				 if(loadGame.checkMode(CST.MODE.SELECTLINE)){
-					lineContainer.selectLine(lineContainer.lines[gameObject.name.INDEXOFLINE]);
-					UIScene.SetselectedLineText(gameObject.name.INDEXOFLINE);
+					loadGame.lineContainer.selectLine(loadGame.lineContainer.lines[gameObject.name.INDEXOFLINE]);
+					loadGame.UIScene.SetselectedLineText(gameObject.name.INDEXOFLINE);
 				 }
 				 else if(loadGame.checkMode(CST.MODE.DELETESELECTLINE)){
-					lineContainer.clearSelectedLine();
-					UIScene.SetClearLineText();
+					loadGame.lineContainer.clearSelectedLine();
+					loadGame.UIScene.SetClearLineText();
 				 }
 				 else if(loadGame.checkMode(CST.MODE.SEEDATA)){
 					 
@@ -151,11 +187,11 @@ export class PlayScene extends Phaser.Scene{
 					if(type === CST.TYPE.DOT){
 						var indexOfLine = gameObject.name.INDEXOFLINE;
 						var indexOfDot = gameObject.name.INDEXOFDOT;
-						UIScene.SetPanel
-						(lineContainer.lines[indexOfLine].dots[indexOfDot], type);
+						loadGame.UIScene.SetPanel
+						(loadGame.lineContainer.lines[indexOfLine].dots[indexOfDot], type);
 					}else{
 						var index = gameObject.name.INDEX;
-						UIScene.SetPanel(noteContainer.notes[index], type);
+						loadGame.UIScene.SetPanel(loadGame.noteContainer.notes[index], type);
 					}
 				 }
 			}
@@ -173,24 +209,24 @@ export class PlayScene extends Phaser.Scene{
 		 // }
     }
 	update(){
-		camera.camZoom(cursors);
+		this.camera.camZoom(cursors);
 		player.stopPlayer(target);
 		if(nowPlay){
-			UIScene.SetTimes(timer.getElapsedSeconds().toFixed(3));
-			JudgeNote();
+			this.UIScene.SetTimes(this.lineContainer.timer.getElapsedSeconds().toFixed(3));
+			this.noteContainer.judgeNote();
 		}
 	}
 	changeValue(type, index, value){
 		
 		if(type === CST.TYPE.DOT){
 			
-			if(lineContainer.canReturnSelectLine() === false)
+			if(this.lineContainer.canReturnSelectLine() === false)
 				return;
 			
-			var line = lineContainer.returnSelectLine()
+			var line = this.lineContainer.returnSelectLine()
 			
-			for(var i = 0; i < noteContainer.notes.length; i++){
-				if(noteContainer.notes[i].indexOfDot === index){
+			for(var i = 0; i < this.noteContainer.notes.length; i++){
+				if(this.noteContainer.notes[i].indexOfDot === index){
 					return;
 				}
 			}
@@ -201,145 +237,22 @@ export class PlayScene extends Phaser.Scene{
 
 			// 노트 혹은 닷 이동, 닷 시간 바꾸기, 이를 노트에 입력하기
 		}
-	}	
-}
-
-function JudgeNote(){
-	
-	var nowTime = timer.getElapsedSeconds().toFixed(3)
-	var addTime = 0.5;
-		
-	if(notes.length - 1 >= indexOfNotes){
-		if(notes[indexOfNotes].duration + addTime <= nowTime){
-			indexOfNotes += 1;
-		}
-		
-		notes[indexOfNotes].judge(nowTime);
-	}
-}
-
-function initTimer(){
-		timer = loadGame.time.addEvent({
-			startAt: 0,
-    		timeScale: 1,
-    		loop: true,
-			paused: true
-		});
-}
-
-function startTimeline(){
-	nowPlay = true;
-	image = loadGame.add.image(0, 0, 'Wak').setDepth(1);
-	camFollow(image);
-	image.setPosition(0, 0);
-	timeline = buildTimeline(image);
-	timeline.play();
-	g1.setVisible(false);
-	source.setVisible(false);
-	
-	timer.paused = false;
-}
-
-function endTimeline(){
-	
-	console.log("end11")
-	nowPlay = false;
-	image.destroy();
-	camFollow(source);
-	g1.setVisible(true);
-	source.setVisible(true);
-	
-	timer.paused = true;
-	timer.remove();
-	timer = loadGame.time.addEvent({
-		startAt: 0,
-    	timeScale: 1,
-    	loop: true,
-		paused: true,
-	});
-	
-	for(var i = 0; i < notes.length; i++){
-		notes[i].judgeText.setText("");
-		notes[i].judgeOnce = false;
 	}
 	
-	indexOfNotes = 0;
-}
-
-
-
-function initKey(){
-	var keys = loadGame.input.keyboard.addKeys('Q,W,E,R,T,A,B,T,Space', true, true);
-	return keys;
+	initKey(){
+		var keys = loadGame.input.keyboard.addKeys('Q,W,E,R,T,A,B,T,Space', true, true);
+		return keys;
+	}
 }
 
 function returnRealPos(pointer){
-	pointer.updateWorldPoint(camera.cam);
+	pointer.updateWorldPoint(loadGame.camera.cam);
    	const realPointer = pointer; 
 	var realPos = new Phaser.Math.Vector2();
 	realPos.x = realPointer.worldX
     realPos.y = realPointer.worldY
 	
 	return realPos;
-}
-
-function buildTimeline(image){
-	
-	var lineArr = [];
-	for(var i = 0; i < lines.length; i++){
-		lineArr.push
-		({duration: lines[i].duration * 1000, 
-		  x: lines[i].pos.x, y: lines[i].pos.y});
-	}
-	
-	 var line = loadGame.tweens.timeline({
-        targets: image,
-        ease: 'Linear',
-        //duration: 1000,
-        tweens: lineArr,
-		paused: true,
-		onComplete: () => {
-			console.log("end")
-			
-			timedEvent = loadGame.time.addEvent
-		 ({ delay: 1000, callback: endTimeline, callbackScope: this});
-        }
-    });
-	
-	return line;
-}
-
-function movePlayer(){
-	loadGame.physics.moveToObject(source, target, 1000);
-}
-
-function initCam(){
-	cam = loadGame.cameras.main;
-	cam.zoom = 0.6;
-	camFollow(source);
-}
-
-function camFollow(object){
-	cam.startFollow(object, true);
-}
-
-function camZoom(){
-	if (cursors.up.isDown){
-		cam.zoom += 0.03
-	}
-	else if (cursors.down.isDown){
-		cam.zoom -= 0.03
-	}
-}
-
-
-function stopPlayer(){
-	var distance = Phaser.Math.Distance.Between(source.x, source.y, target.x, target.y);
-    if (source.body.speed > 0){
-        if (distance < 10){
-       	    source.body.reset(target.x, target.y);
-        }
-    }
 }
 
 function drawGrid(){

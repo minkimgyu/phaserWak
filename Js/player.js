@@ -4,6 +4,10 @@ export class Player {
 		this.image = this.loadGame.physics.add.image(0, 0, 'Wak').setDepth(depth);
 	}
 	
+	setVisible(bool){
+		this.image.setVisible(bool);
+	}
+	
 	movePlayer(target){
 		this.loadGame.physics.moveToObject(this.image, target, 1000);
 	}

@@ -24,23 +24,22 @@ export class Dot {
 }
 
 export class LineContainer{
-	constructor (loadGame, UIScene) { 
+	constructor (loadGame) { 
 		this.loadGame = loadGame;
 		this.lines = [];
 		this.selectedLine = null;
 		this.timer = null;
-		this.UIScene = UIScene;
 	}
 	
 	addLine(target){
 		
-		var line = new Line(this.loadGame);
+		var line = new Line(this.loadGame, this);
 		this.lines.push(line);
 		this.selectLine(line);
 		line.index = this.lines.length - 1
 		line.addDot(target); // 기본 점 1개
 		
-		this.UIScene.SetselectedLineText(line.dots[0].image.name.INDEXOFLINE);
+		this.loadGame.UIScene.SetselectedLineText(line.dots[0].image.name.INDEXOFLINE);
 	}
 	
 	deleteLine(){
@@ -66,7 +65,7 @@ export class LineContainer{
 		}
 		
 		this.clearSelectedLine();
-		this.UIScene.SetClearLineText();
+		this.loadGame.UIScene.SetClearLineText();
 		console.log(this.lines)
 	}
 	
@@ -93,9 +92,6 @@ export class LineContainer{
 	
 	initTimer(){
 		this.timer = this.loadGame.time.addEvent({
-			callback: this.startLine,
-			args: [],
-			callbackScope: this,
 			startAt: 0,
     		timeScale: 1,
     		loop: true,
@@ -103,7 +99,20 @@ export class LineContainer{
 	}
 	
 	startLine(){
+		this.initTimer();
 		
+		for(var i = 0; i < this.lines.length; i++){
+			this.lines[i].startTimeline();
+		}
+	}
+	
+	endline(){
+		this.timer.paused = true;
+		this.timer.remove();
+		
+		for(var i = 0; i < this.lines.length; i++){
+			this.lines[i].endTimeline();
+		}
 	}
 }
 
@@ -116,6 +125,37 @@ export class Line{
 		this.nowFinish = false;
 		this.player = null;
 		this.debug = this.loadGame.add.graphics();
+		this.indexOfLongNote = [];
+	}
+	
+	clearLongNote(){
+		this.indexOfLongNote = [];
+	}
+	
+	returnLongNote(){
+		return this.indexOfLongNote;
+	}
+	
+	returnLongNoteData(){
+		return this.indexOfLongNote.length;
+	}
+	
+	addLongNote(longNote){
+		if(this.indexOfLongNote.length === 2){
+			this.indexOfLongNote = [];
+			this.indexOfLongNote.push(longNote)
+			return false;
+		}else if(this.indexOfLongNote.length === 1){
+			
+			console.log("clear")
+			this.indexOfLongNote.push(longNote)
+			return true;
+		}else if(this.indexOfLongNote.length === 0){
+			this.indexOfLongNote.push(longNote)
+			return false;
+		}else{
+			return false;
+		}
 	}
 	
 	clearDebug(){
@@ -134,12 +174,14 @@ export class Line{
 		
 		this.player = this.loadGame.add.image(0, 0, 'Wak').setDepth(1);
 		this.player.setPosition(this.dots[0].pos.x, this.dots[0].pos.y);
+		this.player.setVisible(false);
 		
-		this.timeline = buildTimeline(image);
-		this.timeline.play();
+		this.timeline = this.buildTimeline();
 	}
 
  	endTimeline(){
+		this.timeline.stop();
+		this.timeline.destroy();
 		this.timeline = null;
 		this.player.destroy();
 		this.player = null;
@@ -149,27 +191,46 @@ export class Line{
 	
 		var dotArr = [];
 		for(var i = 0; i < this.dots.length; i++){
-			dotArr.push
-			({duration: this.dots[i].duration * 1000, 
+			
+			if(i === 0){
+				dotArr.push({delay : this.dots[0].duration * 1000, 
+								 duration: 0, x: this.dots[i].pos.x, y: this.dots[i].pos.y});
+			}else{
+				dotArr.push
+			({duration: this.dots[i].duration * 1000,
 			  x: this.dots[i].pos.x, y: this.dots[i].pos.y});
+			}
 		}
-
-		 this.timeline = this.loadGame.tweens.timeline({
+		
+		 var timeline = this.loadGame.tweens.timeline({
 			targets: this.player,
 			ease: 'Linear',
-			//duration: 1000,
 			tweens: dotArr,
-			paused: true,
+			paused: false,
+			onStart: () => {
+				if(this.index === 0){
+					this.player.setVisible(true);
+					this.loadGame.camera.camFollow(this.player);
+				}else{
+					this.loadGame.time.addEvent
+				({ delay: this.dots[0].duration * 1000, callback: () => {
+					  this.player.setVisible(true);
+					  this.loadGame.camera.camFollow(this.player);
+				  }
+				 })
+				}
+			},
 			onComplete: () => {
-				
 				this.nowFinish = true;
-				endTimeline();
-				// console.log("end")
-
-				// timedEvent = loadGame.time.addEvent
-				// ({ delay: 1000, callback: endTimeline, callbackScope: this});
+				if(this.loadGame.lineContainer.lines.length - 1 === this.index){
+					this.loadGame.endGame();
+				}else{
+					this.endTimeline();
+				}
 			}
 		});
+		
+		return timeline;
 	}
 
 	addDot(target){
@@ -181,23 +242,33 @@ export class Line{
 		var text = this.loadGame.add.text(xRound + 10, yRound - 50, this.dots.length)
 		.setFont('20px Arial').setColor('#00FFFF').setAlign('center');
 
-		var noteDur = normalDur;
-
-		if(this.dots.length != 0){
-			for(var i = 0; i < this.dots.length; i++){
-				noteDur += this.dots[i].duration;
-			}
-		}
+		var noteDur = 0;
 
 		var timeText = this.loadGame.add.text(xRound + 10, yRound + 30, noteDur)
 		.setFont('20px Arial').setColor('#FF1E1E').setAlign('center');
 
 		Image.name = SetTypeOfImage(CST.TYPE.DOT, this.index, this.dots.length);
-		console.log(Image.name)
-		var newNote = new Dot({x: xRound, y: yRound}, normalDur, Image, text, timeText)
+		//console.log(Image.name)
+		
+		var newNote;
+		if(this.dots.length === 0){
+			var newNote = new Dot({x: xRound, y: yRound}, 0, Image, text, timeText)
+		}else{
+			var newNote = new Dot({x: xRound, y: yRound}, normalDur, Image, text, timeText)
+		}
 
 		this.dots.push(newNote);
 		newNote.image.setInteractive();
+		
+		
+		
+		if(this.dots.length != 0){
+			for(var i = 0; i < this.dots.length; i++){
+				noteDur += this.dots[i].duration;
+			}
+		}
+		newNote.timeText.setText(noteDur);
+		
 		this.drawLine();
 	}
 	
@@ -239,14 +310,15 @@ export class Line{
 	}
 	
 	ReTextOfDot(){
-		for(var i = 0; i < this.dots.length; i++){
-
-			var noteDur = normalDur;
-			for(var j = 0; j < i; j++){
-				noteDur += this.dots[j].duration;
-			}	
-			this.dots[i].timeText.setText(noteDur);
+		var noteDur = 0;
+		if(this.dots.length != 0){
+			for(var i = 0; i < this.dots.length; i++){
+				
+				noteDur += this.dots[i].duration;	
+				this.dots[i].timeText.setText(noteDur);
+			}
 		}
+		
 	}
 	
 	ResetOtherDots(){
@@ -271,11 +343,14 @@ export class Line{
     	this.debug.lineBetween(pos1_x, pos1_y, pos2_x, pos2_y).setDepth(3);
 	}
 	
-	ReturnLongNotePos(startIndex, EndIndex){
+	ReturnLongNotePos(){
 	
+		var startIndex = this.indexOfLongNote[0].indexOfDot;
+		var endIndex = this.indexOfLongNote[1].indexOfDot;
+		
 		var arrOfPos = [];
 
-		for(var i = startIndex; i < EndIndex; i++){
+		for(var i = startIndex; i < endIndex; i++){
 
 			var checkXEqual = this.dots[i].pos.x === this.dots[i + 1].pos.x;
 			var checkYEqual = this.dots[i].pos.y === this.dots[i + 1].pos.y;
